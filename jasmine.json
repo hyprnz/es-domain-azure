@@ -1,0 +1,12 @@
+{
+  "reporters": [
+    {
+      "name": "jasmine-spec-reporter#SpecReporter",
+      "options": {
+        "displayStackTrace": "all"
+      }
+    }
+  ],
+  "spec_dir": "dist/",
+  "spec_files": ["**/*.micro.js", "**/*.integration.js"]
+}
