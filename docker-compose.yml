@@ -1,0 +1,26 @@
+version: '3.8'
+services:
+  dev:
+    hostname: 'dev'
+    image: node:16.14
+    depends_on:
+      - storage
+    container_name: hyprnz-es-domain-azure-dev
+    working_dir: /app
+    volumes:
+      - .:/app:cached
+      # Handy if you're doing commits from the container and don't want to re-enter your details
+      - ~/.gitconfig:/root/.gitconfig:delegated
+      # npm i from inside the container
+      - ~/.npmrc:/root/.npmrc:delegated
+    command: sleep infinity
+
+  storage:
+    image: 'mcr.microsoft.com/azure-storage/azurite'
+    environment:
+      # AZURITE_ACCOUNTS: 'devstoreaccount1:Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw=='
+      AZURITE_ACCOUNTS: 'dev:some-key'
+    ports:
+      - '10000:10000'
+      - '10001:10001'
+      - '10002:10002'

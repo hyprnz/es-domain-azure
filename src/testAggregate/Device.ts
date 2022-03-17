@@ -1,24 +1,63 @@
-import { AbstractChangeEvent, ChangeEvent, EntityBase, EntityChangedObserver, StaticEventHandler, Uuid } from '@hyprnz/es-domain'
+import { ChangeEvent, EntityBase, EntityChangedObserver, StaticEventHandler, Uuid } from '@hyprnz/es-domain'
 
-export class DeviceCreatedEvent extends AbstractChangeEvent {
-  static readonly eventType = 'Device.CreatedEvent'
+export interface DeviceCreatedEvent extends ChangeEvent {
+  eventType: 'DeviceCreatedEvent'
+}
 
-  constructor(aggregateRootId: Uuid.UUID, entityId: Uuid.UUID) {
-    super(DeviceCreatedEvent.eventType, aggregateRootId, entityId)
+export namespace DeviceCreatedEvent {
+  export const eventType = 'DeviceCreatedEvent'
+
+  export const make = (
+    idProvider: () => Uuid.UUID,
+    data: {
+      deviceId: Uuid.UUID
+      correlationId?: Uuid.UUID
+      causationId?: Uuid.UUID
+    }
+  ): DeviceCreatedEvent => ({
+    id: idProvider(),
+    correlationId: data.correlationId ?? idProvider(),
+    causationId: data.causationId ?? idProvider(),
+    eventType,
+    aggregateRootId: data.deviceId,
+    entityId: data.deviceId
+  })
+
+  export const isDeviceCreatedEvent = (e: ChangeEvent): e is DeviceCreatedEvent => e.eventType === eventType
+  export function assertDeviceCreatedEvent(e: ChangeEvent): asserts e is DeviceCreatedEvent {
+    if (isDeviceCreatedEvent(e)) return
+    throw new Error(`Unexpected EventType, Expected EventType: DeviceCreatedEvent, received ${typeof e}`)
   }
 }
 
-export class AlarmCreatedEvent extends AbstractChangeEvent {
-  static readonly eventType = 'Alarm.CreatedEvent'
+export interface AlarmCreatedEvent extends ChangeEvent {
+  eventType: 'AlarmCreatedEvent'
+}
 
-  constructor(aggregateRootId: Uuid.UUID, alarmId: Uuid.UUID) {
-    super(AlarmCreatedEvent.eventType, aggregateRootId, alarmId)
-  }
+export namespace AlarmCreatedEvent {
+  export const eventType = 'AlarmCreatedEvent'
 
-  static assertIsAlarmCreatedEvent(event: ChangeEvent): asserts event is AlarmCreatedEvent {
-    if (event.eventType === AlarmCreatedEvent.eventType) return
+  export const make = (
+    idProvider: () => Uuid.UUID,
+    data: {
+      alarmId: Uuid.UUID
+      deviceId: Uuid.UUID
+      correlationId?: Uuid.UUID
+      causationId?: Uuid.UUID
+    }
+  ): AlarmCreatedEvent => ({
+    id: idProvider(),
+    correlationId: data.correlationId ?? idProvider(),
+    causationId: data.causationId ?? idProvider(),
+    eventType,
+    aggregateRootId: data.deviceId,
+    entityId: data.alarmId
+  })
 
-    throw new Error(`Unexpected EventType, Expected EventType: AlarmCreatedEvent, received ${typeof event}`)
+  export const isAlarmCreatedEvent = (e: ChangeEvent): e is AlarmCreatedEvent => e.eventType === eventType
+  export function assertAlarmCreatedEvent(e: ChangeEvent): asserts e is AlarmCreatedEvent {
+    if (isAlarmCreatedEvent(e)) return
+    throw new Error(`Unexpected EventType, Expected EventType: AlarmCreatedEvent, received ${typeof e}`)
   }
 }
 
@@ -36,6 +75,8 @@ export class Device extends EntityBase {
   addAlarm(id: Uuid.UUID): Alarm {
     const alarm = this.alarms.get(id)
     if (alarm) return alarm
+
+    this.applyChangeEvent(AlarmCreatedEvent.make(Uuid.createV4, { deviceId: this.id, alarmId: id }))
     return this.findAlarm(id)!
   }
 

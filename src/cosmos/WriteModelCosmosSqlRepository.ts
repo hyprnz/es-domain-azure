@@ -76,7 +76,7 @@ export class CosmosAdapter implements InternalEventStoreRepository {
   }
 
   async getEvents(id: Uuid.UUID): Promise<EntityEvent[]> {
-    const result_1 = await this.store.items
+    return this.store.items
       .query<EventStoreModel>({
         query: 'SELECT * FROM EventStore e WHERE e.aggregateRootId = @aggregateRootId order by e.version asc',
         parameters: [
@@ -87,7 +87,7 @@ export class CosmosAdapter implements InternalEventStoreRepository {
         ]
       })
       .fetchAll()
-    return result_1.resources.map(this.toEntityEvent)
+      .then(result => result.resources.map(this.toEntityEvent))
   }
 
   private toPersistable(change: EntityEvent): JSONObject {

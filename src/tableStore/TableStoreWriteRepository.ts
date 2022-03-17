@@ -1,4 +1,4 @@
-import { CreateDeleteEntityAction, TableClient, odata } from '@azure/data-tables'
+import { CreateDeleteEntityAction, TableClient, odata, TableEntity, TableEntityResult } from '@azure/data-tables'
 import { Aggregate, ChangeEvent, EntityEvent, Uuid, WriteModelRepository } from '@hyprnz/es-domain'
 import EventEmitter from 'events'
 import { WriteModelRepositoryError } from '@hyprnz/es-domain/dist/src/writeModelRepository/WriteModelRepositoryError'
@@ -8,7 +8,7 @@ import { StatusCodes } from '@azure/cosmos'
 
 type EventStoreModel = ChangeEvent & { version: number }
 
-class TableStoreWriteRepository implements WriteModelRepository {
+export class TableStoreWriteRepository implements WriteModelRepository {
   private readonly eventEmitter = new EventEmitter()
   private readonly adapter: TableStoreAdapter
 
@@ -55,6 +55,7 @@ export class TableStoreAdapter implements InternalEventStoreRepository {
 
   async appendEvents(aggregateId: Uuid.UUID, changeVersion: number, changes: EntityEvent[]): Promise<void> {
     const models = changes.map(x => this.toPersistable(x))
+    console.log(JSON.stringify(models))
     const operations = models.map((x): CreateDeleteEntityAction => ['create', x])
 
     const txnResult = await this.store.submitTransaction(operations)
@@ -75,17 +76,19 @@ export class TableStoreAdapter implements InternalEventStoreRepository {
       queryOptions: { filter: odata`PartitionKey eq ${id}` }
     })
 
-    // TODO this is gross
+    // TODO this is gross - be careful here as we might have a huge list of events.
     let results: EntityEvent[] = []
     for await (const entity of paginatedResult) {
       results.push(this.toEntityEvent(entity))
     }
 
+    results.sort((a, b) => (a.version < b.version ? -1 : a.version > b.version ? 1 : 0))
     return results
   }
 
-  private toPersistable(change: EntityEvent) {
-    //: TableEntity<EventStoreModel> {
+  // TODO CreateDeleteEntityAction fixes the T in TableEntity to Record<string, unkown>
+  // so we are unable to type TableEntity more narrowly - raise a bug in Azure GH.
+  private toPersistable(change: EntityEvent): TableEntity {
     return {
       partitionKey: change.event.aggregateRootId,
       rowKey: change.event.id,
@@ -94,15 +97,16 @@ export class TableStoreAdapter implements InternalEventStoreRepository {
     }
   }
 
-  private toEntityEvent(x: EventStoreModel): EntityEvent {
+  private toEntityEvent(tableStoreResult: TableEntityResult<EventStoreModel>): EntityEvent {
+    const { etag, partitionKey, rowKey, timestamp, version, ...changeEvent } = tableStoreResult
     const result: EntityEvent = {
-      version: x.version,
+      version: tableStoreResult.version,
       event: {
-        ...x,
-        id: x.id,
-        aggregateRootId: x.aggregateRootId,
-        entityId: x.entityId,
-        eventType: x.eventType
+        ...changeEvent,
+        id: tableStoreResult.id,
+        aggregateRootId: tableStoreResult.aggregateRootId,
+        entityId: tableStoreResult.entityId,
+        eventType: tableStoreResult.eventType
       }
     }
 
