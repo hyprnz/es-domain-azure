@@ -5,6 +5,7 @@ import { WriteModelCosmosSqlRepository } from './WriteModelCosmosSqlRepository'
 import { makeMigrator } from './migrate'
 import { EntityEvent, Uuid } from '@hyprnz/es-domain'
 import { DeviceAggregate } from '../testAggregate/DeviceAggregate'
+import { OptimisticConcurrencyError } from '@hyprnz/es-domain/dist/src/writeModelRepository/OptimisticConcurrencyError'
 
 describe('WriteModelCosmosSqlRepository', () => {
   let writeModelRepo: WriteModelCosmosSqlRepository
@@ -89,11 +90,6 @@ describe('WriteModelCosmosSqlRepository', () => {
     assertThat(anotherDevice.uncommittedChanges()[0].event.aggregateRootId).withMessage('UnCommited anotherDevice').is(deviceId)
 
     await writeModelRepo.save(device)
-    await writeModelRepo.save(anotherDevice).then(
-      () => {
-        throw new Error('Expected and Optimistic concurrency error here!!')
-      },
-      e => assertThat(e.message).is(`Error:AggregateRoot, Optimistic concurrency error detected, Suggested solution is to retry`)
-    )
+    assertThat(writeModelRepo.save(anotherDevice)).catches(new OptimisticConcurrencyError(deviceId, 2))
   })
 })

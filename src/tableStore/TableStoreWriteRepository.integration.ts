@@ -4,6 +4,7 @@ import { EntityEvent, Uuid } from '@hyprnz/es-domain'
 import { DeviceAggregate } from '../testAggregate/DeviceAggregate'
 import { TableStoreWriteRepository } from './TableStoreWriteRepository'
 import { TableClient } from '@azure/data-tables'
+import { OptimisticConcurrencyError } from '@hyprnz/es-domain/dist/src/writeModelRepository/OptimisticConcurrencyError'
 
 describe('TableStoreWriteRepository', () => {
   let writeModelRepo: TableStoreWriteRepository
@@ -86,11 +87,12 @@ describe('TableStoreWriteRepository', () => {
     assertThat(anotherDevice.uncommittedChanges()[0].event.aggregateRootId).withMessage('UnCommited anotherDevice').is(deviceId)
 
     await writeModelRepo.save(device)
-    await writeModelRepo.save(anotherDevice).then(
-      () => {
-        throw new Error('Expected and Optimistic concurrency error here!!')
-      },
-      e => assertThat(e.message).is(`Error:AggregateRoot, Optimistic concurrency error detected, Suggested solution is to retry`)
-    )
+    assertThat(writeModelRepo.save(anotherDevice)).catches(new OptimisticConcurrencyError(deviceId, 2))
+    // await writeModelRepo.save(anotherDevice).then(
+    //   () => {
+    //     throw new Error('Expected and Optimistic concurrency error here!!')
+    //   },
+    //   e => assertThat(e instanceof OptimisticConcurrencyError).is(true)
+    // )
   })
 })

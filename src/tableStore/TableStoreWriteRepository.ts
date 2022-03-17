@@ -1,4 +1,4 @@
-import { CreateDeleteEntityAction, TableClient, odata, TableEntity, TableEntityResult } from '@azure/data-tables'
+import { CreateDeleteEntityAction, TableClient, odata, TableEntity, TableEntityResult, RestError } from '@azure/data-tables'
 import { Aggregate, ChangeEvent, EntityEvent, Uuid, WriteModelRepository } from '@hyprnz/es-domain'
 import EventEmitter from 'events'
 import { WriteModelRepositoryError } from '@hyprnz/es-domain/dist/src/writeModelRepository/WriteModelRepositoryError'
@@ -55,19 +55,22 @@ export class TableStoreAdapter implements InternalEventStoreRepository {
 
   async appendEvents(aggregateId: Uuid.UUID, changeVersion: number, changes: EntityEvent[]): Promise<void> {
     const models = changes.map(x => this.toPersistable(x))
-    console.log(JSON.stringify(models))
     const operations = models.map((x): CreateDeleteEntityAction => ['create', x])
 
-    const txnResult = await this.store.submitTransaction(operations)
-    const code = txnResult.status ?? 200
+    try {
+      const txnResult = await this.store.submitTransaction(operations)
+      console.log(txnResult)
+    } catch (e) {
+      if (!(e instanceof RestError)) {
+        throw new Error(`Unhandled error form Table API: ${JSON.stringify(e)}`)
+      }
 
-    if (code >= 400) {
-      throw new WriteModelRepositoryError('AggregateRoot', `Cosmos Db Error: ${code}`)
-    }
-
-    if (code === 207) {
-      const isConflicted = txnResult.subResponses.find(r => r.status === StatusCodes.Conflict)
-      if (isConflicted) throw new OptimisticConcurrencyError(aggregateId, changeVersion)
+      switch (e.code) {
+        case 'EntityAlreadyExists':
+          throw new OptimisticConcurrencyError(aggregateId, changeVersion)
+        default:
+          throw e
+      }
     }
   }
 
@@ -82,6 +85,7 @@ export class TableStoreAdapter implements InternalEventStoreRepository {
       results.push(this.toEntityEvent(entity))
     }
 
+    // TODO Table API might lexographically sort on partitionKey and rowKey so might not need to do this
     results.sort((a, b) => (a.version < b.version ? -1 : a.version > b.version ? 1 : 0))
     return results
   }
@@ -91,7 +95,7 @@ export class TableStoreAdapter implements InternalEventStoreRepository {
   private toPersistable(change: EntityEvent): TableEntity {
     return {
       partitionKey: change.event.aggregateRootId,
-      rowKey: change.event.id,
+      rowKey: Number(change.version).toString(),
       version: change.version,
       ...change.event
     }
@@ -110,7 +114,6 @@ export class TableStoreAdapter implements InternalEventStoreRepository {
       }
     }
 
-    console.log('To EntityEvent', JSON.stringify(result))
     return result
   }
 }
