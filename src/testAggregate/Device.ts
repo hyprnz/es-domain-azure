@@ -20,7 +20,8 @@ export namespace DeviceCreatedEvent {
     causationId: data.causationId ?? idProvider(),
     eventType,
     aggregateRootId: data.deviceId,
-    entityId: data.deviceId
+    entityId: data.deviceId,
+    dateTimeOfEvent: new Date().toISOString() // TODO: add opaque date type
   })
 
   export const isDeviceCreatedEvent = (e: ChangeEvent): e is DeviceCreatedEvent => e.eventType === eventType
@@ -51,7 +52,8 @@ export namespace AlarmCreatedEvent {
     causationId: data.causationId ?? idProvider(),
     eventType,
     aggregateRootId: data.deviceId,
-    entityId: data.alarmId
+    entityId: data.alarmId,
+    dateTimeOfEvent: new Date().toISOString() // TODO: add opaque date type
   })
 
   export const isAlarmCreatedEvent = (e: ChangeEvent): e is AlarmCreatedEvent => e.eventType === eventType

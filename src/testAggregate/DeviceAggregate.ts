@@ -1,8 +1,8 @@
-import { Aggregate, AggregateContainer, EntityEvent, Uuid } from '@hyprnz/es-domain'
+import { Aggregate, AggregateContainer, ChangeEvent, EntityEvent, Uuid } from '@hyprnz/es-domain'
 import { Alarm, Device, DeviceCreatedEvent } from './Device'
 
 export class DeviceAggregate implements Aggregate {
-  constructor(private aggregate: AggregateContainer<Device> = new AggregateContainer<Device>()) {}
+  constructor(private aggregate: AggregateContainer<Device> = new AggregateContainer<Device>(() => new Device((evt, isSnapshot) => this.aggregate.observe(evt, isSnapshot)))) {}
 
   private get root(): Device {
     return this.aggregate.rootEntity
@@ -24,16 +24,17 @@ export class DeviceAggregate implements Aggregate {
     return this.aggregate.uncommittedChanges()
   }
 
-  withDevice(idProvider: () => Uuid.UUID, id: Uuid.UUID): this {
-    this.aggregate.rootEntity = new Device(evt => this.aggregate.observe(evt))
-    this.root.applyChangeEvent(DeviceCreatedEvent.make(idProvider, { deviceId: id }))
-
+  withDevice(id: Uuid.UUID): this {
+    this.root.applyChangeEvent(DeviceCreatedEvent.make(Uuid.createV4, { deviceId: id }))
     return this
   }
 
   loadFromHistory(history: EntityEvent[]): void {
-    this.aggregate.rootEntity = new Device(evt => this.aggregate.observe(evt))
     this.aggregate.loadFromHistory(history)
+  }
+
+  loadFromVersion(changeEvents: ChangeEvent[], version: number): void {
+    this.aggregate.loadFromVersion(changeEvents, version)
   }
 
   addAlarm(alarmId: Uuid.UUID): Alarm {
@@ -47,5 +48,13 @@ export class DeviceAggregate implements Aggregate {
 
   findAlarm(alarmId: Uuid.UUID): Alarm | undefined {
     return this.root.findAlarm(alarmId)
+  }
+
+  markSnapshotsAsCommitted(): void {
+    this.aggregate.markSnapshotsAsCommitted()
+  }
+
+  countOfEvents(): number {
+    return this.aggregate.countOfEvents()
   }
 }

@@ -23,12 +23,12 @@
   "peerDependencies": {
     "@azure/cosmos": "^3.15.1",
     "@azure/data-tables": "^13.0.1",
-    "@hyprnz/es-domain": "0.0.11"
+    "@hyprnz/es-domain": "0.0.15"
   },
   "devDependencies": {
     "@azure/cosmos": "^3.15.1",
     "@azure/data-tables": "^13.0.1",
-    "@hyprnz/es-domain": "0.0.11",
+    "@hyprnz/es-domain": "0.0.15",
     "@types/jasmine": "^3.10.2",
     "@types/mocha": "^9.1.0",
     "fast-check": "^2.22.0",

@@ -1,66 +1,48 @@
 import { BulkOperationType, Container, CreateOperationInput, JSONObject, OperationResponse, StatusCodes } from '@azure/cosmos'
-import { Aggregate, ChangeEvent, EntityEvent, Uuid, WriteModelRepository } from '@hyprnz/es-domain'
-import EventEmitter from 'events'
+import { ChangeEvent, EntityEvent, Uuid } from '@hyprnz/es-domain'
 import { WriteModelRepositoryError } from '@hyprnz/es-domain/dist/src/writeModelRepository/WriteModelRepositoryError'
 import { OptimisticConcurrencyError } from '@hyprnz/es-domain/dist/src/writeModelRepository/OptimisticConcurrencyError'
-import { InternalEventStoreRepository } from '@hyprnz/es-domain/dist/src/writeModelRepository/InternalEventStoreRepository'
+import { InternalEventStore } from '@hyprnz/es-domain/dist/src/writeModelRepository/InternalEventStore'
 
 type EventStoreModel = ChangeEvent & { version: number }
 
-export class WriteModelCosmosSqlRepository implements WriteModelRepository {
-  private readonly eventEmitter = new EventEmitter()
-  private readonly adapter: CosmosAdapter
+export class CosmosInternalEventStore implements InternalEventStore {
+  constructor(private container: Container) {}
 
-  constructor(store: Container) {
-    this.adapter = new CosmosAdapter(store)
+  getEventsAfterVersion(id: Uuid.UUID, version: number): Promise<EntityEvent[]> {
+    return this.container.items
+      .query<EventStoreModel>({
+        query: 'SELECT * FROM EventStore e WHERE e.aggregateRootId = @aggregateRootId and e.version > @version order by e.version asc',
+        parameters: [
+          {
+            name: '@aggregateRootId',
+            value: id
+          },
+          {
+            name: '@version',
+            value: version
+          }
+        ]
+      })
+      .fetchAll()
+      .then(result => result.resources.map(this.toEntityEvent))
   }
-
-  async save<T extends Aggregate>(aggregateRoot: T): Promise<number> {
-    const changes = aggregateRoot.uncommittedChanges()
-    if (changes.length === 0) return Promise.resolve(0)
-    const lastChange = changes[changes.length - 1]
-    await this.adapter.appendEvents(aggregateRoot.id, lastChange.version, changes)
-    aggregateRoot.markChangesAsCommitted(lastChange.version)
-    this.onAfterEventsStored(changes)
-    return changes.length
-  }
-
-  async load<T extends Aggregate>(id: Uuid.UUID, aggregate: T): Promise<T> {
-    const events = await this.loadEvents(id)
-    if (events.length === 0) {
-      throw new WriteModelRepositoryError('AggregateContainer', `Failed to load aggregate id:${id}: NOT FOUND`)
-    }
-    aggregate.loadFromHistory(events)
-    return aggregate
-  }
-
-  loadEvents(id: Uuid.UUID): Promise<EntityEvent[]> {
-    return this.adapter.getEvents(id)
-  }
-
-  subscribeToChangesSynchronously(handler: (changes: Array<EntityEvent>) => void) {
-    this.eventEmitter.addListener('events', handler)
-  }
-
-  private onAfterEventsStored(changes: Array<EntityEvent>) {
-    if (changes.length) {
-      this.eventEmitter.emit('events', changes)
-    }
-  }
-}
-
-export class CosmosAdapter implements InternalEventStoreRepository {
-  constructor(private store: Container) {}
 
   async appendEvents(aggregateId: Uuid.UUID, changeVersion: number, changes: EntityEvent[]): Promise<void> {
-    const models = changes.map(x => this.toPersistable(x))
+    // const options = {
+    //   disableAutomaticIdGeneration: true,
+    //   consistencyLevel: 'Eventual'
+    // }
+    const clock = new Date().toISOString()
+    const models = changes.map(x => this.toPersistable(clock, x))
     const operations: Array<CreateOperationInput> = models.map(x => ({
+      // partitionKey: aggregateRoot.id,
       operationType: BulkOperationType.Create,
       resourceBody: x
     }))
 
     // NOTE: Batch sizes are limited to 100!!
-    const statusResult = await this.store.items.batch(operations, aggregateId)
+    const statusResult = await this.container.items.batch(operations, aggregateId)
 
     const code = statusResult.code ?? 200
     if (code >= 400) {
@@ -75,8 +57,8 @@ export class CosmosAdapter implements InternalEventStoreRepository {
     }
   }
 
-  async getEvents(id: Uuid.UUID): Promise<EntityEvent[]> {
-    return this.store.items
+  getEvents(id: Uuid.UUID): Promise<EntityEvent[]> {
+    return this.container.items
       .query<EventStoreModel>({
         query: 'SELECT * FROM EventStore e WHERE e.aggregateRootId = @aggregateRootId order by e.version asc',
         parameters: [
@@ -90,9 +72,11 @@ export class CosmosAdapter implements InternalEventStoreRepository {
       .then(result => result.resources.map(this.toEntityEvent))
   }
 
-  private toPersistable(change: EntityEvent): JSONObject {
+  private toPersistable(clock: string, change: EntityEvent): JSONObject {
     return {
       version: change.version,
+      // dateTimeOfEvent: clock,
+
       ...change.event
     }
   }
