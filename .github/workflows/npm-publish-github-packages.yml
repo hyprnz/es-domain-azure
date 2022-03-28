@@ -19,7 +19,7 @@ jobs:
           node-version: 16
       - run: npm i
         env:
-          NPM_TOKEN: ${{secrets.GITHUB_TOKEN}}
+          GIT_NPM_TOKEN: ${{secrets.GITHUB_TOKEN}}
       - run: npm run test:micro
 
   publish-gpr:

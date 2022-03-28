@@ -1,6 +1,6 @@
 {
   "name": "@hyprnz/es-domain-azure",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "es-domain implementations for azure services",
   "types": "dist/index.d.ts",
   "repository": {
