@@ -1,6 +1,6 @@
 {
   "name": "@hyprnz/es-domain-azure",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "es-domain implementations for azure services",
   "types": "dist/index.d.ts",
   "repository": {
@@ -20,7 +20,7 @@
     "storage:start": "mkdir -p ./.azureStorage && npx azurite-table --loose --silent --location ./.azureStorage --debug ./.azureStorage/debug.log",
     "docker:dev": "docker-compose -f ./dev/docker-compose.yml -f ./dev/docker-compose-cosmos.yml",
     "docker:dev:up": "npm run docker:dev -- up -d",
-    "docker:dev:down": "npm run docker:dev -- down",
+    "docker:dev:down": "npm run docker:dev -- down -v",
     "docker:dev:connect": "npm run docker:dev -- exec dev bash"
   },
   "author": "HYPR Innovation",
