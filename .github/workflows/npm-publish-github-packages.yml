@@ -21,7 +21,7 @@ jobs:
           node-version: 16
       - run: npm i      
       - run: npm run test:micro
-      - run: npm run storage:start & npm run test:integration
+      - run: npm run storage:start & npm run test:integration:ci
 
   publish-gpr:
     needs: build
