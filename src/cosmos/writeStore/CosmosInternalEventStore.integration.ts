@@ -1,9 +1,9 @@
 import { assertThat, match } from 'mismatched'
 import { CosmosClient, CosmosClientOptions } from '@azure/cosmos'
-import { makeMigrator } from './migrate'
+import { makeMigrator } from './makeMigrator'
 import { AggregateRepository, EntityEvent, Uuid } from '@hyprnz/es-domain'
 import { CosmosInternalEventStore } from './CosmosInternalEventStore'
-import { DeviceAggregate } from '../testAggregate/DeviceAggregate'
+import { DeviceAggregate } from '../../testAggregate/DeviceAggregate'
 
 xdescribe('CosmosInternalEventStore', () => {
   let repository: AggregateRepository
