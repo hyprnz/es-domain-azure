@@ -22,7 +22,7 @@ jobs:
       - run: npm i
       - run: npm run storage:start
       - run: npm run test:micro
-      - run: npm run test:integration
+      - run: npm run storage:start & npm run test:integration
 
   publish-gpr:
     needs: build
