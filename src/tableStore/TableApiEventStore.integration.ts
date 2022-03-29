@@ -6,16 +6,20 @@ import { TableApiEventStore } from './TableApiEventStore'
 import { OptimisticConcurrencyError } from '@hyprnz/es-domain/dist/src/writeModelRepository/OptimisticConcurrencyError'
 
 describe('TableApiEventStore', () => {
-  let repository: AggregateRepository
-
+  let repository: AggregateRepository  
+  
   before(async () => {
+    const developmentConnectionString = "UseDevelopmentStorage=true";
+    const containerConnectionString = 'DefaultEndpointsProtocol=http;AccountName=dev;AccountKey=some-key;TableEndpoint=http://localhost:10002/dev;'
+
     const tableClient = TableClient.fromConnectionString(
-      'DefaultEndpointsProtocol=http;AccountName=dev;AccountKey=some-key;TableEndpoint=http://localhost:10002/dev;',
-      'eventstore',
+      developmentConnectionString, 
+      'eventstore', 
       { allowInsecureConnection: true }
     )
 
-    await tableClient.deleteTable()
+    
+    // await tableClient.deleteTable()
     await tableClient.createTable()
 
     repository = new AggregateRepository(new TableApiEventStore(tableClient))

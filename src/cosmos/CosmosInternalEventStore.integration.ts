@@ -5,7 +5,7 @@ import { AggregateRepository, EntityEvent, Uuid } from '@hyprnz/es-domain'
 import { CosmosInternalEventStore } from './CosmosInternalEventStore'
 import { DeviceAggregate } from '../testAggregate/DeviceAggregate'
 
-describe('CosmosInternalEventStore', () => {
+xdescribe('CosmosInternalEventStore', () => {
   let repository: AggregateRepository
 
   before(async () => {

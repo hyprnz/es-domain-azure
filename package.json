@@ -1,6 +1,6 @@
 {
   "name": "@hyprnz/es-domain-azure",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "es-domain implementations for azure services",
   "types": "dist/index.d.ts",
   "repository": {
@@ -16,7 +16,8 @@
     "clean": "rimraf dist/** && rimraf ./tsconfig.tsbuildinfo",
     "clean:build": "npm run clean && npm run build",
     "test:micro": "mocha -r ts-node/register 'src/**/*.micro.ts'",
-    "test:integration": "mocha -r ts-node/register 'src/**/*.integration.ts'"
+    "test:integration": "mocha -r ts-node/register 'src/**/*.integration.ts'",
+    "storage:start": "mkdir -p ./.azureStorage && npx azurite-table --loose --silent --location ./.azureStorage --debug ./.azureStorage/debug.log"
   },
   "author": "HYPR Innovation",
   "license": "ISC",
@@ -31,6 +32,7 @@
     "@hyprnz/es-domain": "0.0.15",
     "@types/jasmine": "^3.10.2",
     "@types/mocha": "^9.1.0",
+    "azurite": "~3.16.0",
     "fast-check": "^2.22.0",
     "husky": "^7.0.4",
     "jasmine": "^4.0.2",

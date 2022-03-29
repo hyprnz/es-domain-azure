@@ -10,6 +10,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      GIT_NPM_TOKEN: ${{secrets.GITHUB_TOKEN}}
     permissions:      
       packages: read
     steps:
@@ -18,9 +20,9 @@ jobs:
         with:
           node-version: 16
       - run: npm i
-        env:
-          GIT_NPM_TOKEN: ${{secrets.GITHUB_TOKEN}}
+      - run: npm run storage:start
       - run: npm run test:micro
+      - run: npm run test:integration
 
   publish-gpr:
     needs: build
