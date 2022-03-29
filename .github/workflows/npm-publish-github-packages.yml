@@ -19,8 +19,7 @@ jobs:
       - uses: actions/setup-node@v2
         with:
           node-version: 16
-      - run: npm i
-      - run: npm run storage:start
+      - run: npm i      
       - run: npm run test:micro
       - run: npm run storage:start & npm run test:integration
 
