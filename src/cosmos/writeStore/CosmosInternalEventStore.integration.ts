@@ -5,14 +5,17 @@ import { AggregateRepository, EntityEvent, Uuid } from '@hyprnz/es-domain'
 import { CosmosInternalEventStore } from './CosmosInternalEventStore'
 import { DeviceAggregate } from '../../testAggregate/DeviceAggregate'
 
-xdescribe('CosmosInternalEventStore', () => {
+describe('CosmosInternalEventStore', () => {
   let repository: AggregateRepository
 
   before(async () => {
     const databaseId = 'testdb'
     const containerName = 'eventstore'
 
-    const options: CosmosClientOptions = { endpoint: 'localhost', key: 'some-key' }
+    const COSMOS_KEY='C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw=='
+    const COSMOS_ENDPOINT='https://cosmosdb.local:8081/'
+    // Set up DB connection and new up the repository
+    const options: CosmosClientOptions = { endpoint: COSMOS_ENDPOINT, key: COSMOS_KEY }
     const client = new CosmosClient(options)
 
     const migrate = makeMigrator(client, databaseId, containerName)
@@ -91,7 +94,7 @@ xdescribe('CosmosInternalEventStore', () => {
       () => {
         throw new Error('Expected and Optimistic concurrency error here!!')
       },
-      e => assertThat(e.message).is(`Error:AggregateRoot, Optimistic concurrency error detected, Suggested solution is to retry`)
+      e => assertThat(e.message).is(`Optimistic concurrency error for aggregate root id: ${deviceId}, version: 2`)
     )
   })
 })

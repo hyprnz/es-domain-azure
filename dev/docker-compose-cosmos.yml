@@ -1,0 +1,44 @@
+version: "3.8"
+
+services:
+  dev:
+    environment:
+      - NODE_TLS_REJECT_UNAUTHORIZED=0 
+    depends_on:
+      - cosmos
+    networks:
+      cosmosdb-local-network:
+        ipv4_address: 172.24.0.2 # 172.24.0.1 is taken by the default gateway
+
+  cosmos:
+    # Once running, the CosmosDB emulator can be accessed using a browser on the host at
+    # https://localhost:8081/_explorer/index.html
+    # container_name: cosmosdb-emulator
+    image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator@sha256:2e21adc088740e1d926edb28e950fb818abd024cd6926457f34df4345f9c0b9e
+    hostname: cosmosdb.local
+    cpus: 2.0
+    mem_limit: 3g
+    ports:
+      - 8081:8081 # Default emulator port
+      # - 8091:8901 # Gremlin port
+      - 8092:8902 # Table port
+      # - 10251:10251 # CosmosDB direct port
+      # - 10252:10252 # CosmosDB direct port
+      # - 10253:10253 # CosmosDB direct port
+      # - 10254:10254 # CosmosDB direct port
+    environment:
+      - AZURE_COSMOS_EMULATOR_PARTITION_COUNT=10
+      - AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE=true
+      # - AZURE_COSMOS_EMULATOR_GREMLIN_ENDPOINT=true
+      - AZURE_COSMOS_EMULATOR_ENABLE_TABLE_ENDPOINT=true
+    networks:
+      cosmosdb-local-network:
+        ipv4_address: 172.24.0.99 # using *.*.0.99 leaves some addresses for additional dependencies
+
+# need to define explicit IPs/network as if cosmosdb IP changes the certificate will be invalid
+networks:
+  cosmosdb-local-network:
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.24.0.0/16

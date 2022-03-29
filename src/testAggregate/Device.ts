@@ -1,11 +1,13 @@
 import { ChangeEvent, EntityBase, EntityChangedObserver, StaticEventHandler, Uuid } from '@hyprnz/es-domain'
 
 export interface DeviceCreatedEvent extends ChangeEvent {
-  eventType: 'DeviceCreatedEvent'
+  eventType: 'Device.CreatedEvent'
 }
 
+
+
 export namespace DeviceCreatedEvent {
-  export const eventType = 'DeviceCreatedEvent'
+  export const eventType = 'Device.CreatedEvent'
 
   export const make = (
     idProvider: () => Uuid.UUID,
@@ -32,17 +34,22 @@ export namespace DeviceCreatedEvent {
 }
 
 export interface AlarmCreatedEvent extends ChangeEvent {
-  eventType: 'AlarmCreatedEvent'
+  eventType: 'Alarm.CreatedEvent',
+  name: string
 }
 
+export interface AlarmDestroyedEvent extends ChangeEvent {
+  eventType: 'Alarm.DestroyedEvent'
+}
 export namespace AlarmCreatedEvent {
-  export const eventType = 'AlarmCreatedEvent'
+  export const eventType = 'Alarm.CreatedEvent'
 
   export const make = (
     idProvider: () => Uuid.UUID,
     data: {
       alarmId: Uuid.UUID
       deviceId: Uuid.UUID
+      name: string,
       correlationId?: Uuid.UUID
       causationId?: Uuid.UUID
     }
@@ -53,7 +60,8 @@ export namespace AlarmCreatedEvent {
     eventType,
     aggregateRootId: data.deviceId,
     entityId: data.alarmId,
-    dateTimeOfEvent: new Date().toISOString() // TODO: add opaque date type
+    dateTimeOfEvent: new Date().toISOString(), // TODO: add opaque date type
+    name: data.name
   })
 
   export const isAlarmCreatedEvent = (e: ChangeEvent): e is AlarmCreatedEvent => e.eventType === eventType
@@ -62,6 +70,35 @@ export namespace AlarmCreatedEvent {
     throw new Error(`Unexpected EventType, Expected EventType: AlarmCreatedEvent, received ${typeof e}`)
   }
 }
+
+export namespace AlarmDestroyedEvent {
+  export const eventType = 'Alarm.DestroyedEvent'
+
+  export const make = (
+    idProvider: () => Uuid.UUID,
+    data: {
+      alarmId: Uuid.UUID
+      deviceId: Uuid.UUID
+      correlationId?: Uuid.UUID
+      causationId?: Uuid.UUID
+    }
+  ): AlarmDestroyedEvent => ({
+    id: idProvider(),
+    correlationId: data.correlationId ?? idProvider(),
+    causationId: data.causationId ?? idProvider(),
+    eventType,
+    aggregateRootId: data.deviceId,
+    entityId: data.alarmId,
+    dateTimeOfEvent: new Date().toISOString() // TODO: add opaque date type
+  })
+
+  export const isAlarmDestroyedEvent = (e: ChangeEvent): e is AlarmCreatedEvent => e.eventType === eventType
+  export function assertAlarmDestroyedEvent(e: ChangeEvent): asserts e is AlarmCreatedEvent {
+    if (isAlarmDestroyedEvent(e)) return
+    throw new Error(`Unexpected EventType, Expected EventType: ${eventType}, received ${e.eventType}`)
+  }
+}
+
 
 export class Alarm {
   constructor(readonly id: Uuid.UUID) {}
@@ -78,7 +115,7 @@ export class Device extends EntityBase {
     const alarm = this.alarms.get(id)
     if (alarm) return alarm
 
-    this.applyChangeEvent(AlarmCreatedEvent.make(Uuid.createV4, { deviceId: this.id, alarmId: id }))
+    this.applyChangeEvent(AlarmCreatedEvent.make(Uuid.createV4, { deviceId: this.id, alarmId: id, name:'Important' }))
     return this.findAlarm(id)!
   }
 

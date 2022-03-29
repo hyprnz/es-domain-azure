@@ -8,9 +8,7 @@ export const makeCosmosReadStoreMigrator = (
   async function up(): Promise<void> {
     // logger.debug("### Migrating... ###");
     try {
-      const { database } = await client.databases.createIfNotExists({
-        id: databaseId,
-      });
+      const { database } = await client.databases.createIfNotExists({id: databaseId,});
 
       const { resources: foundContainers } = await database.containers.readAll().fetchAll();
 
