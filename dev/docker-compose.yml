@@ -7,7 +7,8 @@ services:
       - storage
     working_dir: /app
     volumes:
-      - ..:/app:cached     
+      - ..:/app:cached
+      - ~/.npmrc:/home/node/.npmrc:delegated
     command: sleep infinity
     environment:
       - GIT_NPM_TOKEN=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
@@ -21,4 +22,3 @@ services:
       - '10000:10000'
       - '10001:10001'
       - '10002:10002'
-  

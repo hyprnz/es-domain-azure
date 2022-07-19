@@ -1,4 +1,4 @@
-import { ChangeEvent, EntityBase, EntityChangedObserver, StaticEventHandler, Uuid } from '@hyprnz/es-domain'
+import { ChangeEvent, EntityBase, EntityChangedObserver, EntityConstructorPayload, StaticEventHandler, Uuid } from '@hyprnz/es-domain'
 
 export interface DeviceCreatedEvent extends ChangeEvent {
   eventType: 'Device.CreatedEvent'
@@ -100,6 +100,9 @@ export namespace AlarmDestroyedEvent {
 }
 
 
+interface InitialiseDevicePayload extends EntityConstructorPayload {
+
+}
 export class Alarm {
   constructor(readonly id: Uuid.UUID) {}
 }
@@ -107,8 +110,19 @@ export class Alarm {
 export class Device extends EntityBase {
   private alarms: Map<Uuid.UUID, Alarm> = new Map<Uuid.UUID, Alarm>()
 
-  constructor(observer: EntityChangedObserver) {
+  constructor(
+    observer: EntityChangedObserver,
+    payload: InitialiseDevicePayload,
+    isRehydrating = false
+  ) {
     super(observer)
+    if(!isRehydrating){
+      this.applyChangeEvent(
+        DeviceCreatedEvent.make(() => payload.id, {
+          deviceId: payload.id,
+        })
+      )
+    }
   }
 
   addAlarm(id: Uuid.UUID): Alarm {
@@ -154,5 +168,12 @@ export class Device extends EntityBase {
         device.alarms.set(alarm.id, alarm)
       }
     ]
+  }
+
+  static toCreationParameters(event: ChangeEvent): InitialiseDevicePayload {
+    DeviceCreatedEvent.isDeviceCreatedEvent(event);
+    return {
+      id: event.aggregateRootId,
+    };
   }
 }

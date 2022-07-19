@@ -1,18 +1,19 @@
 import { Projection, ReadModelRepository, Uuid } from "@hyprnz/es-domain";
 import { Container, JSONObject } from "@azure/cosmos";
 
+export type ProjectionMiddleware = (projectionName: string, projection: Projection) => Promise<Projection>
 
 // Allow us to create, update and read back out our projections.
 
 export class CosmosSqlReadRepository implements ReadModelRepository {
-  constructor(private store: Container) {}
+  constructor(private store: Container, private readonly middleware: ProjectionMiddleware = (n,p) => Promise.resolve(p as Projection)) { }
 
   // Get a projection, given it's type, and based on it's ID.
   async find<T extends Projection>(projectionName: string, id: Uuid.UUID): Promise<T | undefined> {
     const result = await this.store
       .item(this.makeRowId(projectionName, { id: id }), projectionName)
       .read();
-    return this.fromPersistable<T>(result.resource);
+    return this.fromPersistable<T>(projectionName, result.resource);
   }
 
   // Allows us to save a new projection to the database.
@@ -35,9 +36,10 @@ export class CosmosSqlReadRepository implements ReadModelRepository {
   }
 
   /** Transform the DB-stored JSON data into our projection object. */
-  private fromPersistable<T extends Projection>(serialised: Record<string, any>): T | undefined {
+  private fromPersistable<T extends Projection>(projectionName: string, serialised: Record<string, any>): Promise<T | undefined> {
     const projection = serialised ? serialised["projection"] : undefined;
-    return isProjection(projection) ? (projection as T) : undefined;
+    if (isProjection(projection)) return this.middleware(projectionName, projection).then(p => p as T)
+    return Promise.resolve(undefined);
   }
 
   // We want to transform our projection object into something that the DB can store (e.g. JSON)

@@ -97,7 +97,7 @@ export class CosmosInternalEventStore implements InternalEventStore {
     // TODO : We have no generic way of detecting dates
     Object.keys(result.event)
       .filter(key => key.startsWith('_')) //Remove some cosmos built in properties, the structures we use for persisting may be adjusted ?
-      .concat('version')
+      .concat('version') // Why remove version this is a significant field that will be needed to perform logic!!
       .forEach(key => delete (result.event as Record<string, unknown>)[key])
 
     console.log('To EntityEvent', JSON.stringify(result))

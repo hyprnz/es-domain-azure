@@ -1,9 +1,9 @@
 import { assertThat, match } from 'mismatched'
 import { CosmosClient, CosmosClientOptions } from '@azure/cosmos'
 import { makeMigrator } from './makeMigrator'
-import { AggregateRepository, EntityEvent, Uuid } from '@hyprnz/es-domain'
+import { AggregateContainer, AggregateRepository, EntityEvent, Uuid } from '@hyprnz/es-domain'
 import { CosmosInternalEventStore } from './CosmosInternalEventStore'
-import { DeviceAggregate } from '../../testAggregate/DeviceAggregate'
+import { Device } from '../../testAggregate/Device'
 
 describe('CosmosInternalEventStore', () => {
   let repository: AggregateRepository
@@ -31,8 +31,9 @@ describe('CosmosInternalEventStore', () => {
     const deviceId = Uuid.createV4()
     const alarmId = Uuid.createV4()
 
-    const deviceAggregate = new DeviceAggregate().withDevice(deviceId)
-    deviceAggregate.addAlarm(alarmId)
+    const deviceAggregate = new AggregateContainer(Device) //.withDevice(deviceId)
+    const device = deviceAggregate.createNewAggregateRoot({id:deviceId})
+    device.addAlarm(alarmId)
 
     const uncommittedEvents = deviceAggregate.uncommittedChanges()
 
@@ -50,8 +51,10 @@ describe('CosmosInternalEventStore', () => {
     const deviceId = Uuid.createV4()
     const alarmId = Uuid.createV4()
 
-    const deviceAggregate = new DeviceAggregate().withDevice(deviceId)
-    deviceAggregate.addAlarm(alarmId)
+    const deviceAggregate = new AggregateContainer(Device) //.withDevice(deviceId)
+    const device = deviceAggregate.createNewAggregateRoot({id:deviceId})
+    device.addAlarm(alarmId)
+
 
     const uncomittedEvents = deviceAggregate.uncommittedChanges()
     await repository.save(deviceAggregate)
@@ -67,21 +70,29 @@ describe('CosmosInternalEventStore', () => {
     const deviceId = Uuid.createV4()
     const alarmId = Uuid.createV4()
 
-    const deviceAggregate = new DeviceAggregate().withDevice(deviceId)
-    deviceAggregate.addAlarm(alarmId)
+    const deviceAggregate = new AggregateContainer(Device)
+    const device = deviceAggregate.createNewAggregateRoot({id:deviceId})
+    device.addAlarm(alarmId)
+
     await repository.save(deviceAggregate)
 
-    const anotherDeviceAggregate = await repository.load(deviceId, new DeviceAggregate())
+    const anotherDeviceAggregate = await repository.load(
+      deviceId,
+      new AggregateContainer(Device)
+    );
+    const anotherDevice = anotherDeviceAggregate.rootEntity;
+
+
 
     // Make changes to both
-    deviceAggregate.addAlarm(Uuid.createV4())
-    anotherDeviceAggregate.addAlarm(Uuid.createV4())
+    device.addAlarm(Uuid.createV4())
+    anotherDevice.addAlarm(Uuid.createV4())
 
     assertThat(deviceAggregate.changeVersion).withMessage('deviceAggregate version').is(1)
     assertThat(anotherDeviceAggregate.changeVersion).withMessage('anotherDeviceAggregate version').is(1)
 
-    assertThat(deviceAggregate.uncommittedChanges()).is(match.array.length(1))
-    assertThat(anotherDeviceAggregate.uncommittedChanges()).is(match.array.length(1))
+    assertThat(deviceAggregate.uncommittedChanges()).withMessage("deviceAggregate one event").is(match.array.length(1))
+    assertThat(anotherDeviceAggregate.uncommittedChanges()).withMessage("anotherDeviceAggregate one event").is(match.array.length(1))
 
     assertThat(deviceAggregate.uncommittedChanges()[0].version).withMessage('UnCommited device').is(2)
     assertThat(anotherDeviceAggregate.uncommittedChanges()[0].version).withMessage('UnCommited anotherDevice').is(2)

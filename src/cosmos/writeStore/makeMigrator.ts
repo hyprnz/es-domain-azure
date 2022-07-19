@@ -17,7 +17,7 @@ export const makeMigrator = (client: CosmosClient, databaseId: string, container
           paths: ['/aggregateRootId']
         },
         indexingPolicy: {
-          indexingMode: 'consistent'
+          indexingMode: 'consistent',
         },
         uniqueKeyPolicy: {
           uniqueKeys: [{ paths: ['/aggregateRootId', '/version'] }]

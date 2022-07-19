@@ -1,24 +1,24 @@
 import { assertThat, match } from 'mismatched'
-import { AggregateRepository, EntityEvent, Uuid } from '@hyprnz/es-domain'
-import { DeviceAggregate } from '../testAggregate/DeviceAggregate'
+import { AggregateContainer, AggregateRepository, EntityEvent, Uuid } from '@hyprnz/es-domain'
 import { TableClient } from '@azure/data-tables'
 import { TableApiEventStore } from './TableApiEventStore'
 import { OptimisticConcurrencyError } from '@hyprnz/es-domain/dist/src/writeModelRepository/OptimisticConcurrencyError'
+import { Device } from '../testAggregate/Device'
 
 describe('TableApiEventStore', () => {
-  let repository: AggregateRepository  
-  
+  let repository: AggregateRepository
+
   before(async () => {
     const developmentConnectionString = "UseDevelopmentStorage=true";
-    const containerConnectionString = 'DefaultEndpointsProtocol=http;AccountName=dev;AccountKey=some-key;TableEndpoint=http://localhost:10002/dev;'
+    const containerConnectionString = 'DefaultEndpointsProtocol=http;AccountName=dev;AccountKey=some-key;TableEndpoint=http://storage:10002/dev;'
 
     const tableClient = TableClient.fromConnectionString(
-      developmentConnectionString, 
-      'eventstore', 
+      containerConnectionString,
+      'eventstore',
       { allowInsecureConnection: true }
     )
 
-    
+
     // await tableClient.deleteTable()
     await tableClient.createTable()
 
@@ -29,8 +29,9 @@ describe('TableApiEventStore', () => {
     const deviceId = Uuid.createV4()
     const alarmId = Uuid.createV4()
 
-    const deviceAggregate = new DeviceAggregate().withDevice(deviceId)
-    deviceAggregate.addAlarm(alarmId)
+    const deviceAggregate = new AggregateContainer(Device) //.withDevice(deviceId)
+    const device = deviceAggregate.createNewAggregateRoot({id:deviceId})
+    device.addAlarm(alarmId)
 
     const uncommittedEvents = deviceAggregate.uncommittedChanges()
 
@@ -48,8 +49,9 @@ describe('TableApiEventStore', () => {
     const deviceId = Uuid.createV4()
     const alarmId = Uuid.createV4()
 
-    const deviceAggregate = new DeviceAggregate().withDevice(deviceId)
-    deviceAggregate.addAlarm(alarmId)
+    const deviceAggregate = new AggregateContainer(Device) //.withDevice(deviceId)
+    const device = deviceAggregate.createNewAggregateRoot({id:deviceId})
+    device.addAlarm(alarmId)
 
     const uncomittedEvents = deviceAggregate.uncommittedChanges()
     await repository.save(deviceAggregate)
@@ -64,15 +66,21 @@ describe('TableApiEventStore', () => {
     const deviceId = Uuid.createV4()
     const alarmId = Uuid.createV4()
 
-    const deviceAggregate = new DeviceAggregate().withDevice(deviceId)
-    deviceAggregate.addAlarm(alarmId)
+    const deviceAggregate = new AggregateContainer(Device) //.withDevice(deviceId)
+    const device = deviceAggregate.createNewAggregateRoot({id:deviceId})
+    device.addAlarm(alarmId)
+
     await repository.save(deviceAggregate)
 
-    const anotherDeviceAggregate = await repository.load(deviceId, new DeviceAggregate())
+    const anotherDeviceAggregate = await repository.load(
+      deviceId,
+      new AggregateContainer(Device)
+    );
+    const anotherDevice = anotherDeviceAggregate.rootEntity;
 
     // Make changes to both
-    deviceAggregate.addAlarm(Uuid.createV4())
-    anotherDeviceAggregate.addAlarm(Uuid.createV4())
+    device.addAlarm(Uuid.createV4())
+    anotherDevice.addAlarm(Uuid.createV4())
 
     assertThat(deviceAggregate.changeVersion).withMessage('deviceAggregate version').is(1)
     assertThat(anotherDeviceAggregate.changeVersion).withMessage('anotherDeviceAggregate version').is(1)
