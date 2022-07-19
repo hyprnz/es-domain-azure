@@ -13,7 +13,7 @@ describe('TableApiEventStore', () => {
     const containerConnectionString = 'DefaultEndpointsProtocol=http;AccountName=dev;AccountKey=some-key;TableEndpoint=http://storage:10002/dev;'
 
     const tableClient = TableClient.fromConnectionString(
-      containerConnectionString,
+      developmentConnectionString,
       'eventstore',
       { allowInsecureConnection: true }
     )
@@ -66,7 +66,7 @@ describe('TableApiEventStore', () => {
     const deviceId = Uuid.createV4()
     const alarmId = Uuid.createV4()
 
-    const deviceAggregate = new AggregateContainer(Device) //.withDevice(deviceId)
+    const deviceAggregate = new AggregateContainer(Device)
     const device = deviceAggregate.createNewAggregateRoot({id:deviceId})
     device.addAlarm(alarmId)
 
