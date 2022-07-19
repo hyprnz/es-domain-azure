@@ -14,9 +14,8 @@ services:
       - GIT_NPM_TOKEN=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
 
   storage:
-    image: 'mcr.microsoft.com/azure-storage/azurite'
+    image: mcr.microsoft.com/azure-storage/azurite
     environment:
-      # AZURITE_ACCOUNTS: 'devstoreaccount1:Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw=='
       AZURITE_ACCOUNTS: 'dev:some-key'
     ports:
       - '10000:10000'
