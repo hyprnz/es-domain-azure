@@ -1,7 +1,7 @@
 import { CreateDeleteEntityAction, TableClient, odata, TableEntity, TableEntityResult, RestError } from '@azure/data-tables'
-import { ChangeEvent, EntityEvent, Uuid } from '@hyprnz/es-domain'
-import { InternalEventStore } from '@hyprnz/es-domain/dist/src/writeModelRepository/InternalEventStore'
-import { OptimisticConcurrencyError } from '@hyprnz/es-domain/dist/src/writeModelRepository/OptimisticConcurrencyError'
+import { ChangeEvent, EntityEvent, InternalEventStore, OptimisticConcurrencyError, Uuid } from '@hyprnz/es-domain'
+
+
 
 type EventStoreModel = ChangeEvent & { version: number }
 

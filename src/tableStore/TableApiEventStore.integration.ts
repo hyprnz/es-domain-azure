@@ -1,8 +1,8 @@
 import { assertThat, match } from 'mismatched'
-import { AggregateContainer, AggregateRepository, EntityEvent, Uuid } from '@hyprnz/es-domain'
+import { AggregateContainer, AggregateRepository, EntityEvent, OptimisticConcurrencyError, Uuid } from '@hyprnz/es-domain'
 import { TableClient } from '@azure/data-tables'
 import { TableApiEventStore } from './TableApiEventStore'
-import { OptimisticConcurrencyError } from '@hyprnz/es-domain/dist/src/writeModelRepository/OptimisticConcurrencyError'
+
 import { Device } from '../testAggregate/Device'
 
 describe('TableApiEventStore', () => {

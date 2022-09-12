@@ -1,8 +1,6 @@
 import { BulkOperationType, Container, CreateOperationInput, JSONObject, OperationResponse, StatusCodes } from '@azure/cosmos'
-import { ChangeEvent, EntityEvent, Uuid } from '@hyprnz/es-domain'
-import { WriteModelRepositoryError } from '@hyprnz/es-domain/dist/src/writeModelRepository/WriteModelRepositoryError'
-import { OptimisticConcurrencyError } from '@hyprnz/es-domain/dist/src/writeModelRepository/OptimisticConcurrencyError'
-import { InternalEventStore } from '@hyprnz/es-domain/dist/src/writeModelRepository/InternalEventStore'
+import { ChangeEvent, EntityEvent, Uuid, OptimisticConcurrencyError, InternalEventStore, WriteModelRepositoryError } from '@hyprnz/es-domain'
+
 
 type EventStoreModel = ChangeEvent & { version: number }
 
