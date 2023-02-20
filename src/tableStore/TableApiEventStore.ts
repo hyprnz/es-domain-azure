@@ -9,6 +9,10 @@ export class TableApiEventStore implements InternalEventStore {
   constructor(private store: TableClient) {}
 
   async appendEvents(aggregateId: Uuid.UUID, changeVersion: number, changes: EntityEvent[]): Promise<void> {
+    const notAllEventsForSameAggregate = changes.some(x => x.event.aggregateRootId !== aggregateId)
+    if(notAllEventsForSameAggregate){
+      throw new Error("All events must be for single AggregateRoot / Partition as azure table storage transactions cannot span multiple partitions.")
+    }
     const models = changes.map(x => this.toPersistable(x))
     const operations = models.map((x): CreateDeleteEntityAction => ['create', x])
 

@@ -1,5 +1,5 @@
 import { assertThat, match } from 'mismatched'
-import { AggregateContainer, AggregateRepository, EntityEvent, OptimisticConcurrencyError, Uuid } from '@hyprnz/es-domain'
+import { AggregateContainer, AggregateRepository, EntityEvent, InternalEventStore, OptimisticConcurrencyError, Uuid } from '@hyprnz/es-domain'
 import { TableClient } from '@azure/data-tables'
 import { TableApiEventStore } from './TableApiEventStore'
 
@@ -7,8 +7,9 @@ import { Device } from '../testAggregate/Device'
 
 describe('TableApiEventStore', () => {
   let repository: AggregateRepository
+  let eventStoreRepo: InternalEventStore
 
-  before(async () => {
+  beforeAll(async () => {
     const developmentConnectionString = "UseDevelopmentStorage=true";
     const containerConnectionString = 'DefaultEndpointsProtocol=http;AccountName=dev;AccountKey=some-key;TableEndpoint=http://storage:10002/dev;'
 
@@ -22,7 +23,8 @@ describe('TableApiEventStore', () => {
     // await tableClient.deleteTable()
     await tableClient.createTable()
 
-    repository = new AggregateRepository(new TableApiEventStore(tableClient))
+    eventStoreRepo = new TableApiEventStore(tableClient)
+    repository = new AggregateRepository(eventStoreRepo)
   })
 
   it('stores events', async () => {
@@ -97,4 +99,22 @@ describe('TableApiEventStore', () => {
     await repository.save(deviceAggregate)
     assertThat(repository.save(anotherDeviceAggregate)).catches(new OptimisticConcurrencyError(deviceId, 2))
   })
+
+  it("should fail to append events from multiple aggregates", async () =>{
+    const deviceAggregate1 = new AggregateContainer(Device) //.withDevice(deviceId)
+    deviceAggregate1.createNewAggregateRoot({id:Uuid.createV4()})
+
+    const deviceAggregate2 = new AggregateContainer(Device) //.withDevice(deviceId)
+    deviceAggregate2.createNewAggregateRoot({id:Uuid.createV4()})
+
+    // Events across multiple aggregate roots
+    const events = deviceAggregate1.uncommittedChanges().concat(deviceAggregate2.uncommittedChanges())
+
+    const VERSION = 0
+    await eventStoreRepo.appendEvents(deviceAggregate1.id, VERSION, events).then(
+      () => {throw new Error('Expected Multile PK to fail !!')},
+      e => assertThat(e).is(new Error("All events must be for single AggregateRoot / Partition as azure table storage transactions cannot span multiple partitions."))
+    )
+  })
+
 })
