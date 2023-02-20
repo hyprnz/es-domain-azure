@@ -45,7 +45,7 @@ jobs:
       packages: write
     env:
       GIT_NPM_TOKEN: ${{secrets.GITHUB_TOKEN}}
-      
+
     needs: diagnotics
     steps:
       - name: Checkout
@@ -60,6 +60,9 @@ jobs:
           scope: '@hyprnz'
         env:
           NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
+      - name: Authenticate with private NPM package
+        run: echo "//registry.npmjs.org/:_authToken=${{ secrets.GITHUB_TOKEN }}" > ~/.npmrc
 
       - name: Install Dependencies
         working-directory: .
@@ -82,6 +85,10 @@ jobs:
         run: npm run test:micro
 
       - name: Integration Test
+        run: |
+          npm run storage:start & npm run test:integration:ci
+
+      - name: Integration Test (Container)
         run: |
           npm run docker:dev:up
           npm run docker:dev -- exec -T dev npm run test:integration:table
