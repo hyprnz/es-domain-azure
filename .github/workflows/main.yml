@@ -43,6 +43,9 @@ jobs:
     permissions:
       contents: read
       packages: write
+    env:
+      GIT_NPM_TOKEN: ${{secrets.GITHUB_TOKEN}}
+      
     needs: diagnotics
     steps:
       - name: Checkout
@@ -56,7 +59,7 @@ jobs:
           registry-url: https://npm.pkg.github.com/
           scope: '@hyprnz'
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
       - name: Install Dependencies
         working-directory: .
@@ -89,14 +92,14 @@ jobs:
         run: |
           npm publish --dry-run
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
       - name: Publish
         if: ${{ success() && github.event_name == 'workflow_dispatch' && inputs.create_new_release == true }}
         run: |
           npm publish
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
 
 
