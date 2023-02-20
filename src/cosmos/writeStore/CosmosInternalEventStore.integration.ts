@@ -8,7 +8,7 @@ import { Device } from '../../testAggregate/Device'
 describe('CosmosInternalEventStore', () => {
   let repository: AggregateRepository
 
-  before(async () => {
+  beforeAll(async () => {
     const databaseId = 'testdb'
     const containerName = 'eventstore'
 

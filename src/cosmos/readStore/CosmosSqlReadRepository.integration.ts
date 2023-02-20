@@ -12,7 +12,7 @@ describe("CosmosSqlReadRepository", () => {
   let readModelRepo: CosmosSqlReadRepository;
   const applyProjectionChanges = alarmProjection;
 
-  before(async () => {
+  beforeAll(async () => {
     const databaseId = 'testdb'
     const containerName = 'readstore'
 
@@ -22,17 +22,17 @@ describe("CosmosSqlReadRepository", () => {
     const options: CosmosClientOptions = { endpoint: COSMOS_ENDPOINT, key: COSMOS_KEY }
     client = new CosmosClient(options)
 
-    
+
     const migrator = await makeCosmosReadStoreMigrator(client, databaseId, containerName)
     await migrator.up()
-    
+
     const database = client.database(databaseId)
     const container = database.container(containerName)
 
     readModelRepo = new CosmosSqlReadRepository(container);
   });
 
-  after(() => {
+  afterAll(() => {
     if (client) client.dispose();
   });
 
@@ -43,10 +43,10 @@ describe("CosmosSqlReadRepository", () => {
     const alarmId = Uuid.createV4()
     const alarmCreatedEvent = AlarmCreatedEvent.make(() => alarmId, {alarmId, deviceId, name: 'Importnant Alarm'});
 
-    
+
     // ACT
     await applyProjectionChanges(
-      [{ version: 0, event: alarmCreatedEvent }], 
+      [{ version: 0, event: alarmCreatedEvent }],
       readModelRepo
     );
 
@@ -57,7 +57,7 @@ describe("CosmosSqlReadRepository", () => {
       alarmId
     );
 
-    
+
     // Retrieved projection should be same as the one we persisted.
     assertThat(persistedProjection).is(
       match.obj.has({
@@ -73,9 +73,9 @@ describe("CosmosSqlReadRepository", () => {
     const deviceId = Uuid.createV4()
     const alarmId = Uuid.createV4()
     const alarmCreatedEvent = AlarmCreatedEvent.make(() => alarmId, {alarmId, deviceId, name: 'Important Alarm'});
-    
+
     await applyProjectionChanges(
-      [{ version: 0, event: alarmCreatedEvent }], 
+      [{ version: 0, event: alarmCreatedEvent }],
       readModelRepo
     );
 
@@ -107,7 +107,7 @@ describe("CosmosSqlReadRepository", () => {
     const alarmCreatedEvent = AlarmCreatedEvent.make(() => alarmId, {alarmId, deviceId, name: 'Important Alarm'});
 
     await applyProjectionChanges(
-      [{ version: 0, event: alarmCreatedEvent }], 
+      [{ version: 0, event: alarmCreatedEvent }],
       readModelRepo
     );
 
