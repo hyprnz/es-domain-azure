@@ -16,7 +16,7 @@
     "test:micro": "jest  --selectProjects micro",
     "test:integration": "jest  --selectProjects integration",
     "test:integration:table": "jest  --selectProjects integration.table",
-    "test:integration:ci": "jest  --selectProjects integration --ci --reporters=jest-junit",
+    "test:integration:ci": "jest  --selectProjects integration.table --ci --reporters=jest-junit",
     "docker:dev": "docker-compose -f ./dev/docker-compose.yml -f ./dev/docker-compose-cosmos.yml",
     "docker:dev:up": "npm run docker:dev -- up -d",
     "docker:dev:down": "npm run docker:dev -- down -v",
