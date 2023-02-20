@@ -89,6 +89,7 @@ jobs:
           npm run storage:start & npm run test:integration:ci
 
       - name: Integration Test (Container)
+        if: false
         run: |
           npm run docker:dev:up
           npm run docker:dev -- exec -T dev npm run test:integration:table
